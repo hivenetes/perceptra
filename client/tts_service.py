@@ -2,11 +2,9 @@ import wave
 import time
 import riva.client
 import riva.client.audio_io
-from openai import OpenAI
 import os
 import anthropic
 from dotenv import load_dotenv
-
 from shared_logging import setup_logger
 
 logger = setup_logger()

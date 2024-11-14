@@ -1,0 +1,46 @@
+services:
+  parakeet_ctc_asr:
+    container_name: parakeet-ctc-1.1b-asr
+    image: nvcr.io/nim/nvidia/parakeet-ctc-1.1b-asr:1.0.0
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: ["gpu"]
+    shm_size: 8GB
+    environment:
+      - NGC_CLI_API_KEY=${NGC_CLI_API_KEY}
+      - NIM_MANIFEST_PROFILE=9136dd64-4777-11ef-9f27-37cfd56fa6ee
+      - NIM_HTTP_API_PORT=9000
+      - NIM_GRPC_API_PORT=50051
+    volumes:
+      - ${NIM_CACHE_PATH}:/opt/nim/.cache
+    ports:
+      - "9000:9000"
+      - "50051:50051"
+
+  fastpitch_hifigan_tts:
+    container_name: fastpitch-hifigan-tts
+    image: nvcr.io/nim/nvidia/fastpitch-hifigan-tts:1.0.0
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: ["gpu"]
+    shm_size: 8GB
+    environment:
+      - NGC_CLI_API_KEY=${NGC_CLI_API_KEY}
+      - NIM_MANIFEST_PROFILE=3c8ee3ee-477f-11ef-aa12-1b4e6406fad5
+      - NIM_HTTP_API_PORT=9001
+      - NIM_GRPC_API_PORT=50052
+    volumes:
+      - ${NIM_CACHE_PATH}:/opt/nim/.cache
+    ports:
+      - "9001:9001"
+      - "50052:50052"
