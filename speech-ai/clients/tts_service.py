@@ -3,10 +3,20 @@ import time
 import riva.client
 import riva.client.audio_io
 from openai import OpenAI
+import os
+import anthropic
+from dotenv import load_dotenv
+
+from shared_logging import setup_logger
+
+logger = setup_logger()
+
 
 class TTSService:
     def __init__(self, args):
         """Initialize TTS service with configuration parameters"""
+        load_dotenv()  # This will load the .env file
+        
         self.args = args
         self.tts_auth = riva.client.Auth(
             args.ssl_cert, args.use_ssl, args.tts_server, args.metadata
@@ -17,18 +27,20 @@ class TTSService:
         
     def synthesize_speech(self, text):
         """Synthesize speech from text input"""
-        # Initialize OpenAI client and make API call
-        client = OpenAI()
-        completion = client.chat.completions.create(
-            model="gpt-4",  # Note: fixed typo in model name from "gpt-4o"
+        
+        client = anthropic.Anthropic()
+
+        message = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=1024,
             messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": text}  # Use input text as prompt
+                {"role": "user", "content": text}
             ]
         )
-        response_oai = completion.choices[0].message.content
-        
-        sound_stream, out_f = None, None
+
+        # response_oai = completion.choices[0].message.content
+        response_oai = message.content[0].text
+        sound_stream = None
         
         try:
             # Initialize audio output devices if specified
@@ -39,29 +51,21 @@ class TTSService:
                     sampwidth=self.sampwidth,
                     framerate=self.args.sample_rate_hz,
                 )
-            if self.args.output is not None:
-                out_f = wave.open(str(self.args.output), "wb")
-                out_f.setnchannels(self.nchannels)
-                out_f.setsampwidth(self.sampwidth)
-                out_f.setframerate(self.args.sample_rate_hz)
 
-            print("Generating audio for request...")
             start = time.time()
             
             if self.args.stream:
-                self._handle_streaming_synthesis(response_oai, sound_stream, out_f, start)  # Use OpenAI response
+                self._handle_streaming_synthesis(response_oai, sound_stream, start)  # Use Anthropic response
             else:
-                self._handle_batch_synthesis(response_oai, sound_stream, out_f, start)  # Use OpenAI response
+                self._handle_batch_synthesis(response_oai, sound_stream, start)  # Use Anthropic response
                 
         except Exception as e:
-            print(f"TTS Error: {e}")
+            logger.error(f"TTS Error: {e}")
         finally:
-            if out_f is not None:
-                out_f.close()
             if sound_stream is not None:
                 sound_stream.close()
 
-    def _handle_streaming_synthesis(self, text, sound_stream, out_f, start):
+    def _handle_streaming_synthesis(self, text, sound_stream, start):
         """Handle streaming synthesis mode"""
         responses = self.tts_service.synthesize_online(
             text,
@@ -77,14 +81,13 @@ class TTSService:
         for resp in responses:
             stop = time.time()
             if first:
-                print(f"Time to first audio: {(stop - start):.3f}s")
+                logger.info(f"Time to first audio: {(stop - start):.3f}s")
                 first = False
             if sound_stream is not None:
                 sound_stream(resp.audio)
-            if out_f is not None:
-                out_f.writeframesraw(resp.audio)
 
-    def _handle_batch_synthesis(self, text, sound_stream, out_f, start):
+
+    def _handle_batch_synthesis(self, text, sound_stream, start):
         """Handle batch synthesis mode"""
         resp = self.tts_service.synthesize(
             text,
@@ -95,9 +98,7 @@ class TTSService:
             quality=20 if self.args.quality is None else self.args.quality,
         )
         stop = time.time()
-        print(f"Time spent: {(stop - start):.3f}s")
+        logger.info(f"Time spent: {(stop - start):.3f}s")
         
         if sound_stream is not None:
             sound_stream(resp.audio)
-        if out_f is not None:
-            out_f.writeframesraw(resp.audio)

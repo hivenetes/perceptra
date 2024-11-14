@@ -1,6 +1,9 @@
 import time
 import riva.client
 import riva.client.audio_io
+from shared_logging import setup_logger
+
+logger = setup_logger()
 
 class ASRService:
     def __init__(self, args):
@@ -60,7 +63,7 @@ class ASRService:
                         return final_transcript
 
         except Exception as e:
-            print(f"Error during transcription: {str(e)}")
+            logger.error(f"Error during transcription: {str(e)}")
 
         return final_transcript
 
@@ -81,7 +84,6 @@ class ASRService:
 
                 start_time = time.time()
                 remaining_time = duration
-                print("Recording started...")
                 
                 for response in responses:
                     current_time = time.time()
@@ -90,10 +92,9 @@ class ASRService:
                     
                     if new_remaining_time != remaining_time:
                         remaining_time = new_remaining_time
-                        print(f"\rTime remaining: {remaining_time}s", end="", flush=True)
+                        logger.warning(f"Time remaining: {remaining_time}s")
                     
                     if elapsed_time >= duration:
-                        print("\nRecording finished!")
                         break
 
                     if response.results:
@@ -102,6 +103,8 @@ class ASRService:
                                 transcript = result.alternatives[0].transcript
 
         except KeyboardInterrupt:
-            print("\nRecording stopped by user")
+            logger.info("Recording stopped by user")
+        except Exception as e:
+            logger.error(f"Error during recording: {str(e)}")
         
         return transcript

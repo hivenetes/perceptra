@@ -11,6 +11,13 @@ import riva.client.audio_io
 import threading
 from asr_service import ASRService
 from tts_service import TTSService
+import logging
+
+logging.basicConfig(
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -47,13 +54,13 @@ def parse_args() -> argparse.Namespace:
     # TTS parameters
     parser.add_argument("--voice", help="Voice name for TTS")
     parser.add_argument("--output-device", type=int, help="Output device to use.")
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=Path,
-        default="output.wav",
-        help="Output file .wav file to write synthesized audio.",
-    )
+    # parser.add_argument(
+    #     "-o",
+    #     "--output",
+    #     type=Path,
+    #     default="output.wav",
+    #     help="Output file .wav file to write synthesized audio.",
+    # )
     parser.add_argument(
         "--stream",
         action="store_true",
@@ -80,8 +87,6 @@ def parse_args() -> argparse.Namespace:
     # Common parameters
     parser = add_connection_argparse_parameters(parser)
     args = parser.parse_args()
-    if args.output is not None:
-        args.output = args.output.expanduser()
     if args.output_device or args.play_audio:
         import riva.client.audio_io
     return args
@@ -97,19 +102,17 @@ def run_speech_processing():
             asr_service = ASRService(args)
             tts_service = TTSService(args)
 
-            print("Recording for 3 seconds...")
+            logging.info("Recording for 3 seconds...")
             transcript = asr_service.record_and_transcribe(duration=3)
-            print(f"Final transcription: {transcript}")
 
             if transcript:
-                print("\nGenerating speech from transcription...")
                 tts_service.synthesize_speech(transcript)
                 
         except KeyboardInterrupt:
-            print("\nRecording stopped by user")
+            logging.info("\nRecording stopped by user")
             return
         except Exception as e:
-            print(f"Error in speech processing: {e}")
+            logging.error(f"Error in speech processing: {e}")
             time.sleep(1)
 
 if __name__ == "__main__":
@@ -122,4 +125,4 @@ if __name__ == "__main__":
         while True:
             time.sleep(0.1)
     except KeyboardInterrupt:
-        print("\nExiting program...")
+        logging.info("\nExiting program...")
