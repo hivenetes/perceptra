@@ -7,3 +7,7 @@ Welcome to Perceptra — a mixed-reality playground where artificial intelligenc
 ├── asr # automatic speech recognition
 └── vision # image recognition
 ```
+
+## Reference
+
+- [Conversational AI](https://developer.nvidia.com/topics/ai/conversational-ai)

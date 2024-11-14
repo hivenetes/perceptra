@@ -8,6 +8,9 @@ from riva.client.argparse_utils import (
     add_connection_argparse_parameters,
 )
 import riva.client.audio_io
+import threading
+from asr_service import ASRService
+from tts_service import TTSService
 
 
 def parse_args() -> argparse.Namespace:
@@ -84,168 +87,39 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
-def get_transcription(asr_service, audio_chunks, config) -> str:
-    """Process audio chunks and return final transcription"""
-    final_transcript = ""
+def run_speech_processing():
+    """Wrapper function for the main speech processing logic"""
+    while True:
+        try:
+            args = parse_args()
+            
+            # Initialize services
+            asr_service = ASRService(args)
+            tts_service = TTSService(args)
 
-    try:
-        responses = asr_service.streaming_response_generator(
-            audio_chunks=audio_chunks, streaming_config=config
-        )
-
-        for response in responses:
-            if not response.results:  # Skip empty results
-                continue
-
-            for result in response.results:
-                if (
-                    result.is_final and result.alternatives
-                ):  # Check if alternatives exist
-                    final_transcript = result.alternatives[0].transcript
-                    return final_transcript
-
-    except Exception as e:
-        print(f"Error during transcription: {str(e)}")
-
-    return final_transcript
-
-
-def main() -> None:
-    args = parse_args()
-    # Initialize ASR service
-    asr_auth = riva.client.Auth(
-        args.ssl_cert, args.use_ssl, args.asr_server, args.metadata
-    )
-    asr_service = riva.client.ASRService(asr_auth)
-
-    # Initialize TTS service with different server
-    tts_auth = riva.client.Auth(
-        args.ssl_cert, args.use_ssl, args.tts_server, args.metadata
-    )
-    tts_service = riva.client.SpeechSynthesisService(tts_auth)
-    nchannels = 1
-    sampwidth = 2
-    sound_stream, out_f = None, None
-
-    # Configure ASR
-    asr_config = riva.client.StreamingRecognitionConfig(
-        config=riva.client.RecognitionConfig(
-            encoding=riva.client.AudioEncoding.LINEAR_PCM,
-            language_code=args.language_code,
-            model=args.model_name,
-            max_alternatives=1,
-            enable_automatic_punctuation=args.automatic_punctuation,
-            verbatim_transcripts=not args.no_verbatim_transcripts,
-            sample_rate_hertz=args.sample_rate_hz,
-            audio_channel_count=1,
-        ),
-        interim_results=True,
-    )
-    riva.client.add_word_boosting_to_config(
-        asr_config, args.boosted_lm_words, args.boosted_lm_score
-    )
-    riva.client.add_endpoint_parameters_to_config(
-        asr_config,
-        args.start_history,
-        args.start_threshold,
-        args.stop_history,
-        args.stop_history_eou,
-        args.stop_threshold,
-        args.stop_threshold_eou,
-    )
-    riva.client.add_custom_configuration_to_config(
-        asr_config, args.custom_configuration
-    )
-
-    print("Recording for 5 seconds...")
-    transcript = ""
-
-    try:
-        with riva.client.audio_io.MicrophoneStream(
-            args.sample_rate_hz, args.file_streaming_chunk, device=args.input_device
-        ) as audio_stream:
-            responses = asr_service.streaming_response_generator(
-                audio_chunks=audio_stream,
-                streaming_config=asr_config,
-            )
-
-            start_time = time.time()
-            for response in responses:
-                if time.time() - start_time >= 5:
-                    break
-
-                if response.results:
-                    for result in response.results:
-                        if result.alternatives:
-                            transcript = result.alternatives[0].transcript
-
+            print("Recording for 3 seconds...")
+            transcript = asr_service.record_and_transcribe(duration=3)
             print(f"Final transcription: {transcript}")
 
             if transcript:
                 print("\nGenerating speech from transcription...")
-                try:
-                    if args.output_device is not None or args.play_audio:
-                        sound_stream = riva.client.audio_io.SoundCallBack(
-                            args.output_device,
-                            nchannels=nchannels,
-                            sampwidth=sampwidth,
-                            framerate=args.sample_rate_hz,
-                        )
-                    if args.output is not None:
-                        out_f = wave.open(str(args.output), "wb")
-                        out_f.setnchannels(nchannels)
-                        out_f.setsampwidth(sampwidth)
-                        out_f.setframerate(args.sample_rate_hz)
-                    custom_dictionary_input = {}
-
-                    print("Generating audio for request...")
-                    start = time.time()
-                    if args.stream:
-                        responses = tts_service.synthesize_online(
-                            transcript,
-                            args.voice,
-                            args.language_code,
-                            sample_rate_hz=args.sample_rate_hz,
-                            audio_prompt_file=args.audio_prompt_file,
-                            quality=20 if args.quality is None else args.quality,
-                            custom_dictionary=custom_dictionary_input,
-                        )
-                        first = True
-                        for resp in responses:
-                            stop = time.time()
-                            if first:
-                                print(f"Time to first audio: {(stop - start):.3f}s")
-                                first = False
-                            if sound_stream is not None:
-                                sound_stream(resp.audio)
-                            if out_f is not None:
-                                out_f.writeframesraw(resp.audio)
-                    else:
-                        resp = tts_service.synthesize(
-                            transcript,
-                            args.voice,
-                            args.language_code,
-                            sample_rate_hz=args.sample_rate_hz,
-                            audio_prompt_file=args.audio_prompt_file,
-                            quality=20 if args.quality is None else args.quality,
-                        )
-                        stop = time.time()
-                        print(f"Time spent: {(stop - start):.3f}s")
-                        if sound_stream is not None:
-                            sound_stream(resp.audio)
-                        if out_f is not None:
-                            out_f.writeframesraw(resp.audio)
-                except Exception as e:
-                    print(e)
-                finally:
-                    if out_f is not None:
-                        out_f.close()
-                    if sound_stream is not None:
-                        sound_stream.close()
-    except KeyboardInterrupt:
-        print("\nRecording stopped by user")
-        return
-
+                tts_service.synthesize_speech(transcript)
+                
+        except KeyboardInterrupt:
+            print("\nRecording stopped by user")
+            return
+        except Exception as e:
+            print(f"Error in speech processing: {e}")
+            time.sleep(1)
 
 if __name__ == "__main__":
-    main()
+    # Create and start the speech processing thread
+    speech_thread = threading.Thread(target=run_speech_processing, daemon=True)
+    speech_thread.start()
+    
+    try:
+        # Keep the main thread running
+        while True:
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        print("\nExiting program...")
