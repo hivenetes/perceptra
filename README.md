@@ -1,7 +1,7 @@
 
-# Automatic Speech Recognition with NIMs on GPU Droplets
+# Conversational AI with NIMs on GPU Droplets
 
-This guide provides steps for setting up an Automatic Speech Recognition (ASR) environment using NVIDIA NIMs on DigitalOcean GPU droplets, including client setup instructions and a demonstration video.
+This guide provides steps for setting up an end-to-end Conversational AI pipeline using NVIDIA NIMs on DigitalOcean GPU droplets, including client setup instructions.
 
 ## Prerequisites
 
@@ -30,15 +30,15 @@ Ensure you have the following:
    docker-compose --env-file .env up
    ```
 
-3. **Run the Speech2Speech Client:**
+## Running the S2S Client
+
+1. **Run the Speech2Speech Client:**
 
 Install the following dependencies on your client machine:
 
 ```bash
 pip3 install -r requirements.txt
 ```
-
-### Running the Transcription Client
 
 Use the following command to transcribe audio from your microphone:
 
