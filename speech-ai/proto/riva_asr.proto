@@ -300,7 +300,7 @@ message SpeechRecognitionResult {
   // maximum specified in `max_alternatives`).
   // These alternatives are ordered in terms of accuracy, with the top (first)
   // alternative being the most probable, as ranked by the recognizer.
-  repeated SpeechRecognitionAlternative alternatives = 1;
+  repeated  alternatives = 1;
 
   // For multi-channel audio, this is the channel number corresponding to the
   // recognized result for the audio from that channel.
