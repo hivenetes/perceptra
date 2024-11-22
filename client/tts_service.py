@@ -36,8 +36,8 @@ class TTSService:
             ]
         )
 
-        # response_oai = completion.choices[0].message.content
-        response_oai = message.content[0].text
+        response_anth = message.content[0].text
+        logger.info(f"Anthropic response: {response_anth}")
         sound_stream = None
         
         try:
@@ -53,9 +53,9 @@ class TTSService:
             start = time.time()
             
             if self.args.stream:
-                self._handle_streaming_synthesis(response_oai, sound_stream, start)  # Use Anthropic response
+                self._handle_streaming_synthesis(response_anth, sound_stream, start)  # Use Anthropic response
             else:
-                self._handle_batch_synthesis(response_oai, sound_stream, start)  # Use Anthropic response
+                self._handle_batch_synthesis(response_anth, sound_stream, start)  # Use Anthropic response
                 
         except Exception as e:
             logger.error(f"TTS Error: {e}")

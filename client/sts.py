@@ -21,8 +21,6 @@ logging.basicConfig(
 
 
 def parse_args() -> argparse.Namespace:
-    # default_device_info = riva.client.audio_io.get_default_input_device_info()
-    # default_device_index = None if default_device_info is None else default_device_info['index']
 
     parser = argparse.ArgumentParser(
         description="End-to-end speech agent with ASR and TTS",
@@ -53,14 +51,8 @@ def parse_args() -> argparse.Namespace:
 
     # TTS parameters
     parser.add_argument("--voice", help="Voice name for TTS")
+    parser.add_argument("--list-devices", action="store_true", help="List output audio devices indices.")
     parser.add_argument("--output-device", type=int, help="Output device to use.")
-    # parser.add_argument(
-    #     "-o",
-    #     "--output",
-    #     type=Path,
-    #     default="output.wav",
-    #     help="Output file .wav file to write synthesized audio.",
-    # )
     parser.add_argument(
         "--stream",
         action="store_true",
@@ -87,6 +79,9 @@ def parse_args() -> argparse.Namespace:
     # Common parameters
     parser = add_connection_argparse_parameters(parser)
     args = parser.parse_args()
+    if args.list_devices:
+        riva.client.audio_io.list_output_devices()
+        return
     if args.output_device or args.play_audio:
         import riva.client.audio_io
     return args
@@ -102,10 +97,11 @@ def run_speech_processing():
             asr_service = ASRService(args)
             tts_service = TTSService(args)
 
-            logging.info("Recording for 3 seconds...")
-            transcript = asr_service.record_and_transcribe(duration=3)
+            logging.info("Recording for 5 seconds...")
+            transcript = asr_service.record_and_transcribe(duration=5)
 
             if transcript:
+                logging.info(f"Transcript: {transcript}")
                 tts_service.synthesize_speech(transcript)
                 
         except KeyboardInterrupt:
