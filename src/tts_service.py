@@ -6,7 +6,6 @@ import os
 import anthropic
 from dotenv import load_dotenv
 from shared_logging import setup_logger
-from agent.state import State  # Ensure the import is complete
 
 logger = setup_logger()
 
