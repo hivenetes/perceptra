@@ -108,11 +108,15 @@ class PerceptraAgent:
         Returns:
             str: AI-generated response
         """
+        # Limit the transcript to 100 characters if it's longer
+        limited_transcript = transcript[:100] if len(transcript) > 100 else transcript
+        
         try:
             with self.anthropic_client.messages.stream(
                 model="claude-3-5-sonnet-20241022",
                 max_tokens=1024,
-                messages=[{"role": "user", "content": transcript}]
+                system="You are a seasoned and a smart voice assistant. Do not perform any action without be specifically requested for",
+                messages=[{"role": "user", "content": limited_transcript}]
             ) as stream:
                 return "".join(stream.text_stream)
         except Exception as e:
@@ -122,8 +126,7 @@ class PerceptraAgent:
     def _is_shutdown_command(self, transcript: str) -> bool:
         """
         Check if the transcript contains a shutdown command.
-        
-        Args:
+               Args:
             transcript (str): Transcribed speech input
         
         Returns:
