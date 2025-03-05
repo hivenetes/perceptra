@@ -1,9 +1,7 @@
-nvidia-riva-client==2.17.0
+nvidia-riva-client==2.18.0
 PyAudio==0.2.14
 colorlog==6.9.0
 anthropic==0.39.0
-python-dotenv==1.0.1
-langchain-anthropic
-langchain-community
-langgraph
-tavily-python
+grpcio==1.67.1
+dotenv==0.9.9
+HTTPX==0.27.2
