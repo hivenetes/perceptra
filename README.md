@@ -24,6 +24,7 @@ Ensure you have the following:
 2. **Run the NIM Services:**
 
    ```bash
+   cd server
    # rename .env.example to .env and add the values in the .env file
    mv .env.example .env
    # spin up the nim services (asr and tts)
