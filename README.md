@@ -24,7 +24,7 @@ Ensure you have the following:
 
    ```bash
    ## inital-setup
-   ngc config set
+   ssh -i ~/.ssh/ai paperspace@<ip-address>
    docker login nvcr.io
 
    Username: $oauthtoken
@@ -37,9 +37,9 @@ Ensure you have the following:
    sudo chmod -R 777 $NIM_CACHE_PATH
 
    ## Run the services
-   cd server
-   # rename .env.example to .env and add the values in the .env file
-   mv .env.example .env
+   ./scripts/deploy.sh
+   # ssh into the machine and run the docker-compose command
+   ssh -i ~/.ssh/ai paperspace@<ip-address>
    # spin up the nim services (asr and tts)
    docker-compose --env-file .env up
    ```
@@ -55,6 +55,11 @@ pip3.13 install -r requirements.txt
 ```
 
 Use the following command to transcribe audio from your microphone:
+
+```bash
+# Run this command to get the list audio devices
+python3.13 scripts/transcribe_mic.py --list-device && python3.13 scripts/talk.py --list-device
+```
 
 ```bash
 python3.13 src/main.py --asr-server <public-ip>:50051 --tts-server <public-ip>:50052 --language-code en-US --input-device 0 --output-device 1 --stream

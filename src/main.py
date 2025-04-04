@@ -115,7 +115,7 @@ class PerceptraAgent:
             with self.anthropic_client.messages.stream(
                 model="claude-3-5-sonnet-20241022",
                 max_tokens=1024,
-                system="You are a seasoned and a smart voice assistant. Do not perform any action without be specifically requested for. Keep the answers short and professional!",
+                system="You are a seasoned and a smart voice assistant. Do not perform any action without be specifically requested for",
                 messages=[{"role": "user", "content": limited_transcript}]
             ) as stream:
                 return "".join(stream.text_stream)
